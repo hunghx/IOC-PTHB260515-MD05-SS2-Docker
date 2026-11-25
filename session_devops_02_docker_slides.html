@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DevOps Session 02: Giới Thiệu Docker</title>
+  <style>
+    :root {
+      --bg-page: #f1f5f9;
+      --bg-slide: #ffffff;
+      --bg-subtle: #f8fafc;
+      --text-main: #0f172a;
+      --text-secondary: #475569;
+      --docker-blue: #0284c7;
+      --docker-light: #e0f2fe;
+      --spring-green: #16a34a;
+      --spring-light: #dcfce7;
+      --amber: #d97706;
+      --amber-light: #fef3c7;
+      --rose: #e11d48;
+      --rose-light: #ffe4e6;
+      --purple: #7c3aed;
+      --purple-light: #f3e8ff;
+      --border: #e2e8f0;
+      --border-strong: #cbd5e1;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 16px 20px 24px;
+      overflow-x: hidden;
+    }
+    .slide-frame {
+      width: 100%;
+      max-width: 1220px;
+      min-height: 640px;
+      background: var(--bg-slide);
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+      border: 1px solid var(--border);
+      padding: 24px 32px 28px;
+      display: none;
+      flex-direction: column;
+      animation: fadeIn 0.18s ease-out;
+    }
+    .slide-frame.active {
+      display: flex;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(3px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .slide-header {
+      border-bottom: 2px solid var(--bg-page);
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .badge-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .badge-level {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+    .badge-basic { background: #dbeafe; color: #1d4ed8; }
+    .badge-adv { background: #fae8ff; color: #86198f; }
+    .badge-summary { background: #dcfce7; color: #15803d; }
+
+    .lesson-tag {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      background: var(--docker-light);
+      color: var(--docker-blue);
+    }
+    .slide-title {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-top: 4px;
+    }
+    .slide-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      justify-content: flex-start;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    .card {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+    }
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    pre {
+      background: #ffffff;
+      border: 1px solid var(--border-strong);
+      border-left: 4px solid var(--docker-blue);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+      font-size: 0.81rem;
+      line-height: 1.45;
+      color: #1e293b;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    code {
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+      background: #e2e8f0;
+      color: #0f172a;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+    pre code {
+      background: none;
+      padding: 0;
+      font-size: inherit;
+    }
+    .kw { color: #0284c7; font-weight: 600; }
+    .an { color: #16a34a; font-weight: 600; }
+    .str { color: #b45309; }
+    .cmt { color: #64748b; font-style: italic; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+      line-height: 1.35;
+    }
+    tr:last-child td { border-bottom: none; }
+    th {
+      background: var(--bg-subtle);
+      color: var(--text-main);
+      font-weight: 700;
+    }
+    .diagram-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 140px;
+      overflow: hidden;
+    }
+    svg {
+      width: 100%;
+      height: 100%;
+      max-height: 120px;
+    }
+    .controls {
+      width: 100%;
+      max-width: 1220px;
+      margin-top: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-secondary);
+      font-size: 0.88rem;
+    }
+    .btn {
+      background: #ffffff;
+      color: var(--text-main);
+      border: 1px solid var(--border-strong);
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn:hover {
+      border-color: var(--docker-blue);
+      color: var(--docker-blue);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================= SLIDE 1: BÀI TOÁN MATRIX CỦA ĐỊA NGỤC & GIẢI PHÁP CONTAINER ================= -->
+  <section class="slide-frame active">
+    <div class="slide-header">
+      <div>
+        <div class="badge-group">
+          <span class="badge-level badge-basic">CƠ BẢN</span>
+          <span class="lesson-tag">Lesson 01 • Khái niệm container và so sánh Docker với máy ảo</span>
+        </div>
+        <div class="slide-title">1. Bài Toán Thực Tế: "Nó Chạy Được Trên Máy Của Tôi!"</div>
+      </div>
+    </div>
+    <div class="slide-body">
+      <div class="diagram-card">
+        <svg viewBox="0 0 960 110" xmlns="http://www.w3.org/2000/svg">
+          <rect x="30" y="20" width="220" height="70" rx="8" fill="#fff1f2" stroke="#fda4af" stroke-width="2"/>
+          <text x="140" y="48" text-anchor="middle" font-weight="bold" font-size="13" fill="#e11d48">Máy Developer (MacOS)</text>
+          <text x="140" y="68" text-anchor="middle" font-size="11" fill="#475569">Java 17, Node 18, MySQL 8.0</text>
+
+          <line x1="250" y1="55" x2="360" y2="55" stroke="#dc2626" stroke-width="2.5"/>
+          <text x="305" y="45" text-anchor="middle" font-size="10" font-weight="bold" fill="#dc2626">Deploy</text>
+
+          <rect x="360" y="10" width="240" height="90" rx="10" fill="#fee2e2" stroke="#dc2626" stroke-width="2"/>
+          <text x="480" y="38" text-anchor="middle" font-weight="bold" font-size="14" fill="#991b1b">⚠️ Production (Ubuntu)</text>
+          <text x="480" y="58" text-anchor="middle" font-size="11" fill="#b91c1c">Java 11, Node 14 (Lỗi xung đột!)</text>
+          <text x="480" y="78" text-anchor="middle" font-size="10" font-weight="bold" fill="#7f1d1d">Matrix of Hell: Lỗi môi trường</text>
+
+          <line x1="600" y1="55" x2="710" y2="55" stroke="#16a34a" stroke-width="2.5"/>
+
+          <rect x="710" y="10" width="220" height="90" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="2"/>
+          <text x="820" y="38" text-anchor="middle" font-weight="bold" font-size="14" fill="#14532d">🐳 Giải Pháp: Docker</text>
+          <text x="820" y="58" text-anchor="middle" font-size="11" fill="#15803d">Đóng gói Code + Runtime + Thư viện</text>
+          <text x="820" y="78" text-anchor="middle" font-size="10" font-weight="bold" fill="#166534">Chạy đồng nhất ở mọi nơi!</text>
+        </svg>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Vấn Đề: "The Matrix of Hell"</div>
+          <p style="font-size:0.86rem; line-height:1.5; color:#334155;">
+            • Khi triển khai nhiều ứng dụng (Spring Boot, Node.js, Python, Redis) lên nhiều môi trường khác nhau (Dev, Test, Staging, Cloud, On-Premise).<br/>
+            • Sự khác biệt về hệ điều hành, phiên bản JDK, biến môi trường và thư viện dẫn tới lỗi kinh điển: <em>"Trên máy em chạy bình thường mà lên server lại lỗi!"</em>.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-title">Container Là Gì?</div>
+          <p style="font-size:0.86rem; line-height:1.5; color:#334155;">
+            • <strong>Container</strong> là một đơn vị phần mềm tiêu chuẩn đóng gói mã nguồn và toàn bộ các phụ thuộc (Dependencies, Libraries, Config) cần thiết để ứng dụng chạy độc lập.<br/>
+            • <strong>Triết lý của Docker:</strong> <em>"Build Once, Run Anywhere"</em> (Đóng gói một lần, chạy được ở mọi nơi từ máy tính cá nhân đến máy chủ Cloud).
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SLIDE 2: SO SÁNH DOCKER VS MÁY ẢO VM ================= -->
+  <section class="slide-frame">
+    <div class="slide-header">
+      <div>
+        <div class="badge-group">
+          <span class="badge-level badge-basic">CƠ BẢN</span>
+          <span class="lesson-tag">Lesson 01 • Khái niệm container và so sánh Docker với máy ảo</span>
+        </div>
+        <div class="slide-title">2. So Sánh Chi Tiết: Docker Container vs Virtual Machine (VM)</div>
+      </div>
+    </div>
+    <div class="slide-body">
+      <div class="diagram-card">
+        <svg viewBox="0 0 960 110" xmlns="http://www.w3.org/2000/svg">
+          <!-- VM Side -->
+          <rect x="30" y="10" width="420" height="90" rx="8" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.8"/>
+          <text x="240" y="32" text-anchor="middle" font-weight="bold" font-size="12" fill="#334155">Virtual Machine (Nặng nề - Cấp phần cứng)</text>
+          <rect x="50" y="42" width="105" height="48" rx="4" fill="#fee2e2" stroke="#dc2626"/>
+          <text x="102" y="62" text-anchor="middle" font-size="10" font-weight="bold">App A</text>
+          <text x="102" y="78" text-anchor="middle" font-size="9" fill="#991b1b">Guest OS riêng</text>
+
+          <rect x="170" y="42" width="105" height="48" rx="4" fill="#fee2e2" stroke="#dc2626"/>
+          <text x="222" y="62" text-anchor="middle" font-size="10" font-weight="bold">App B</text>
+          <text x="222" y="78" text-anchor="middle" font-size="9" fill="#991b1b">Guest OS riêng</text>
+
+          <rect x="290" y="42" width="140" height="48" rx="4" fill="#ffffff" stroke="#94a3b8"/>
+          <text x="360" y="62" text-anchor="middle" font-size="10" font-weight="bold">Hypervisor</text>
+          <text x="360" y="78" text-anchor="middle" font-size="9" fill="#64748b">VMware / VirtualBox</text>
+
+          <!-- Docker Side -->
+          <rect x="490" y="10" width="440" height="90" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.8"/>
+          <text x="710" y="32" text-anchor="middle" font-weight="bold" font-size="12" fill="#14532d">Docker Container (Siêu nhẹ - Cấp OS Kernel)</text>
+          <rect x="510" y="42" width="115" height="48" rx="4" fill="#dcfce7" stroke="#16a34a"/>
+          <text x="567" y="62" text-anchor="middle" font-size="10" font-weight="bold">App A + Libs</text>
+          <text x="567" y="78" text-anchor="middle" font-size="9" fill="#15803d">Chỉ vài chục MB</text>
+
+          <rect x="640" y="42" width="115" height="48" rx="4" fill="#dcfce7" stroke="#16a34a"/>
+          <text x="697" y="62" text-anchor="middle" font-size="10" font-weight="bold">App B + Libs</text>
+          <text x="697" y="78" text-anchor="middle" font-size="9" fill="#15803d">Khởi động mili-giây</text>
+
+          <rect x="770" y="42" width="145" height="48" rx="4" fill="#e0f2fe" stroke="#0284c7"/>
+          <text x="842" y="62" text-anchor="middle" font-size="10" font-weight="bold">Docker Engine</text>
+          <text x="842" y="78" text-anchor="middle" font-size="9" fill="#0369a1">Dùng chung OS Kernel</text>
+        </svg>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Bảng So Sánh Kỹ Thuật Toàn Diện</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Tiêu chí</th>
+              <th>🖥️ Máy ảo (Virtual Machine - VM)</th>
+              <th>🐳 Docker Container</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Kiến trúc cô lập</strong></td>
+              <td>Ảo hóa phần cứng qua Hypervisor, mỗi VM có 1 <strong>Guest OS riêng biệt</strong></td>
+              <td>Ảo hóa cấp OS, <strong>dùng chung Kernel</strong> với Host OS qua Namespaces & Cgroups</td>
+            </tr>
+            <tr>
+              <td><strong>Kích thước</strong></td>
+              <td>Rất lớn (Vài GB đến hàng chục GB do chứa cả hệ điều hành)</td>
+              <td>Rất nhẹ (Vài chục MB đến vài trăm MB chỉ chứa runtime & app)</td>
+            </tr>
+            <tr>
+              <td><strong>Tốc độ khởi động</strong></td>
+              <td>Chậm (Mất từ vài chục giây đến vài phút để boot hệ điều hành)</td>
+              <td><strong>Siêu nhanh (Khởi động trong vài giây hoặc mili-giây)</strong></td>
+            </tr>
+            <tr>
+              <td><strong>Hiệu năng (Overhead)</strong></td>
+              <td>Tốn nhiều CPU và RAM chạy hệ điều hành ảo</td>
+              <td>Gần như bằng Native Process (hiệu suất CPU/RAM đạt 99%)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SLIDE 3: BỘ BA KHÁI NIỆM IMAGE, CONTAINER, REGISTRY ================= -->
+  <section class="slide-frame">
+    <div class="slide-header">
+      <div>
+        <div class="badge-group">
+          <span class="badge-level badge-basic">CƠ BẢN</span>
+          <span class="lesson-tag">Lesson 02 • Docker image, container và registry</span>
+        </div>
+        <div class="slide-title">3. Bộ Ba Khái Niệm Cốt Lõi: Image, Container Và Registry</div>
+      </div>
+    </div>
+    <div class="slide-body">
+      <div class="diagram-card">
+        <svg viewBox="0 0 960 110" xmlns="http://www.w3.org/2000/svg">
+          <!-- Registry -->
+          <rect x="30" y="15" width="230" height="80" rx="8" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+          <text x="145" y="48" text-anchor="middle" font-weight="bold" font-size="13" fill="#0369a1">1. Docker Registry</text>
+          <text x="145" y="70" text-anchor="middle" font-size="11" fill="#0284c7">Docker Hub (Kho lưu trữ)</text>
+
+          <line x1="260" y1="55" x2="365" y2="55" stroke="#0284c7" stroke-width="2.5"/>
+          <text x="312" y="45" text-anchor="middle" font-size="10" font-weight="bold" fill="#0284c7">docker pull</text>
+
+          <!-- Image -->
+          <rect x="365" y="10" width="240" height="90" rx="10" fill="#fee2e2" stroke="#dc2626" stroke-width="2"/>
+          <text x="485" y="38" text-anchor="middle" font-weight="bold" font-size="14" fill="#991b1b">2. Docker Image</text>
+          <text x="485" y="58" text-anchor="middle" font-size="11" fill="#b91c1c">Bản thiết kế (Read-only)</text>
+          <text x="485" y="78" text-anchor="middle" font-size="10" font-weight="bold" fill="#7f1d1d">Khuôn đúc bánh (Template)</text>
+
+          <line x1="605" y1="55" x2="710" y2="55" stroke="#16a34a" stroke-width="2.5"/>
+          <text x="657" y="45" text-anchor="middle" font-size="10" font-weight="bold" fill="#16a34a">docker run</text>
+
+          <!-- Container -->
+          <rect x="710" y="15" width="220" height="80" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+          <text x="820" y="48" text-anchor="middle" font-weight="bold" font-size="13" fill="#14532d">3. Docker Container</text>
+          <text x="820" y="70" text-anchor="middle" font-size="11" fill="#15803d">Thực thể sống (Read-Write)</text>
+        </svg>
+      </div>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-title">1. Docker Registry</div>
+          <p style="font-size:0.84rem; line-height:1.45; color:#334155;">
+            • Là "chợ" hoặc kho lưu trữ trực tuyến chứa các Docker Image.<br/>
+            • <strong>Public:</strong> Docker Hub (chứa hàng triệu image có sẵn như Ubuntu, Nginx, MySQL, OpenJDK).<br/>
+            • <strong>Private:</strong> AWS ECR, GitLab Registry, Nexus.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-title">2. Docker Image</div>
+          <p style="font-size:0.84rem; line-height:1.45; color:#334155;">
+            • Là một gói đóng băng tĩnh (Read-Only Template) chứa code, runtime và công cụ.<br/>
+            • Được cấu tạo từ nhiều lớp dữ liệu xếp chồng lên nhau (Layered File System).<br/>
+            • Ví von: Giống như <em>Class</em> trong lập trình hướng đối tượng.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-title">3. Docker Container</div>
+          <p style="font-size:0.84rem; line-height:1.45; color:#334155;">
+            • Là một thực thể sống (Instance) được tạo ra và chạy từ Image.<br/>
+            • Có một lớp mỏng ghi được (Read-Write Layer) ở trên cùng.<br/>
+            • Ví von: Giống như <em>Object</em> được sinh ra từ Class.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SLIDE 4: CÀI ĐẶT DOCKER & KIỂM TRA MÔI TRƯỜNG ================= -->
+  <section class="slide-frame">
+    <div class="slide-header">
+      <div>
+        <div class="badge-group">
+          <span class="badge-level badge-basic">CƠ BẢN</span>
+          <span class="lesson-tag">Lesson 03 • Cài đặt Docker và kiểm tra môi trường</span>
+        </div>
+        <div class="slide-title">4. Cài Đặt Docker Desktop & Kiểm Tra Môi Trường</div>
+      </div>
+    </div>
+    <div class="slide-body">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">1. Hướng Dẫn Cài Đặt Các Nền Tảng</div>
+          <p style="font-size:0.84rem; line-height:1.45; color:#334155;">
+            • <strong>Windows:</strong> Cài đặt Docker Desktop kèm tính năng <strong>WSL 2 (Windows Subsystem for Linux)</strong> để đạt hiệu năng tối ưu.<br/>
+            • <strong>macOS:</strong> Cài đặt Docker Desktop (chọn đúng bản chip Apple Silicon M1/M2/M3 hoặc Intel).<br/>
+            • <strong>Ubuntu / Linux Server:</strong> Cài đặt Docker Engine trực tiếp qua <code>apt-get install docker-ce</code>.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-title">2. Bộ Lệnh Kiểm Tra Sức Khỏe Môi Trường</div>
+          <pre><code><span class="cmt"># 1. Kiểm tra phiên bản Docker Client & Server Engine</span>
+docker --version
+docker version
+
+<span class="cmt"># 2. Xem thông số chi tiết hệ thống (CPU, RAM, Storage Driver)</span>
+docker info
+
+<span class="cmt"># 3. Chạy thử container mẫu để kiểm chứng hoạt động</span>
+docker run hello-world</code></pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Cơ Chế Hoạt Động Của Lệnh <code>docker run hello-world</code></div>
+        <p style="font-size:0.86rem; line-height:1.5; color:#334155;">
+          1. Docker Daemon tìm image <code>hello-world</code> ở máy local ➔ Nếu không thấy (<em>Unable to find image locally</em>).<br/>
+          2. Tự động kết nối lên <strong>Docker Hub</strong> để tải (<em>Pulling from library/hello-world</em>).<br/>
+          3. Khởi tạo một <strong>Container</strong> mới từ image vừa tải ➔ Chạy tiến trình in thông điệp ra màn hình ➔ Tiến trình kết thúc và container tự dừng.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SLIDE 5: VÒNG ĐỜI CONTAINER ================= -->
+  <section class="slide-frame">
+    <div class="slide-header">
+      <div>
+        <div class="badge-group">
+          <span class="badge-level badge-basic">CƠ BẢN</span>
+          <span class="lesson-tag">Lesson 04 • Các lệnh Docker cơ bản trong vòng đời container</span>
+        </div>
+        <div class="slide-title">5. Sơ Đồ Vòng Đời Của Một Container (Container Lifecycle)</div>
+      </div>
+    </div>
+    <div class="slide-body">
+      <div class="diagram-card">
+        <svg viewBox="0 0 960 110" xmlns="http://www.w3.org/2000/svg">
+          <!-- Image -->
+          <rect x="20" y="20" width="130" height="70" rx="8" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+          <text x="85" y="55" text-anchor="middle" font-weight="bold" font-size="13" fill="#0369a1">Docker Image</text>
+
+          <line x1="150" y1="55" x2="230" y2="55" stroke="#0284c7" stroke-width="2"/>
+          <text x="190" y="45" text-anchor="middle" font-size="9" font-weight="bold">create / run</text>
+
+          <!-- Running -->
+          <rect x="230" y="10" width="200" height="90" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+          <text x="330" y="40" text-anchor="middle" font-weight="bold" font-size="14" fill="#14532d">🟢 RUNNING (Đang chạy)</text>
+          <text x="330" y="60" text-anchor="middle" font-size="11" fill="#15803d">Tiến trình chính PID 1 hoạt động</text>
+          <text x="330" y="80" text-anchor="middle" font-size="10" fill="#166534">Đang phục vụ request</text>
+
+          <line x1="430" y1="40" x2="520" y2="40" stroke="#d97706" stroke-width="2"/>
+          <text x="475" y="32" text-anchor="middle" font-size="9" font-weight="bold" fill="#d97706">pause / unpause</text>
+
+          <!-- Paused -->
+          <rect x="520" y="10" width="170" height="90" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+          <text x="605" y="40" text-anchor="middle" font-weight="bold" font-size="13" fill="#78350f">🟡 PAUSED (Tạm dừng)</text>
+          <text x="605" y="65" text-anchor="middle" font-size="11" fill="#b45309">Đóng băng CPU</text>
+
+          <line x1="430" y1="75" x2="730" y2="75" stroke="#dc2626" stroke-width="2"/>
+          <text x="635" y="90" text-anchor="middle" font-size="9" font-weight="bold" fill="#dc2626">stop (SIGTERM) / kill</text>
+
+          <!-- Stopped -->
+          <rect x="730" y="10" width="200" height="90" rx="10" fill="#fee2e2" stroke="#dc2626" stroke-width="2"/>
+          <text x="830" y="40" text-anchor="middle" font-weight="bold" font-size="14" fill="#991b1b">🔴 STOPPED (Đã dừng)</text>
+          <text x="830" y="60" text-anchor="middle" font-size="11" fill="#b91c1c">Trạng thái Exited (0/1)</text>
+          <text x="830" y="80" text-anchor="middle" font-size="10" fill="#7f1d1d">Dùng docker rm để xóa</text>
+        </svg>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Các Trạng Thái Chính Của Container</div>
+          <table>
+            <tr><td><strong>Created</strong></td><td>Container vừa được khởi tạo từ image nhưng chưa bắt đầu chạy</td></tr>
+            <tr><td><strong>Running</strong></td><td>Tiến trình chính đang thực thi, CPU và RAM đang được cấp phát</td></tr>
+            <tr><td><strong>Paused</strong></td><td>Tiến trình bị đóng băng tạm thời qua lệnh <code>docker pause</code></td></tr>
+            <tr><td><strong>Stopped (Exited)</strong></td><td>Tiến trình kết thúc, không tốn tài nguyên CPU/RAM nhưng vẫn còn ổ đĩa</td></tr>
+            <tr><td><strong>Deleted</strong></td><td>Dữ liệu container bị xóa hoàn toàn khỏi hệ thống qua <code>docker rm</code></td></tr>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-title">⚠️ Quy Tắc Vàng Về Vòng Đời Container</div>
+          <p style="font-size:0.86rem; line-height:1.5; color:#334155;">
+            • Một container <strong>chỉ sống khi tiến trình chính (PID 1) của nó còn chạy</strong>.<br/>
+            • Nếu tiến trình chính hoàn thành hoặc bị lỗi kết thúc ➔ Container sẽ chuyển ngay sang trạng thái <strong>Exited</strong>.<br/>
+            • <em>Ephemeral (Tính ngắn hạn):</em> Container có thể bị hủy và tạo lại bất kỳ lúc nào, dữ liệu muốn giữ lâu dài bắt buộc phải dùng <strong>Docker Volume</strong>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SLIDE 6: CÁC LỆNH QUẢN LÝ IMAGE ================= -->
+  <section class="slide-frame">
+    <div class="slide-header">
+      <div>
+        <div class="badge-group">
+          <span class="badge-level badge-basic">CƠ BẢN</span>
+          <span class="lesson-tag">Lesson 04 • Các lệnh Docker cơ bản trong vòng đời container</span>
+        </div>
+        <div class="slide-title">6. Bảng Lệnh Thao Tác Với Docker Image</div>
+      </div>
+    </div>
+    <div class="slide-body">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">1. Tải & Liệt Kê Image</div>
+          <pre><code><span class="cmt"># Tải image từ Docker Hub (Mặc định tag :latest)</span>
+docker pull nginx
+docker pull openjdk:17-jdk-alpine
+
+<span class="cmt"># Xem danh sách các image hiện có trên máy</span>
+docker images
+docker image ls
+
+<span class="cmt"># Tìm kiếm image công khai trên Docker Hub</span>
+docker search mysql</code></pre>
+        </div>
+        <div class="card">
+          <div class="card-title">2. Gắn Thẻ Tag & Xóa Image</div>
+          <pre><code><span class="cmt"># Đặt lại tên/tag cho image để chuẩn bị push</span>
+docker tag my-app:v1 myrepo/my-app:v1.0
+
+<span class="cmt"># Xóa một image khỏi máy local</span>
+docker rmi nginx
+docker image rm &lt;image_id&gt;
+
+<span class="cmt"># Dọn dẹp tất cả image rác không dùng (Dangling)</span>
+docker image prune -a</code></pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Quy Tắc Đặt Tên Docker Image</div>
+        <p style="font-size:0.86rem; line-height:1.5; color:#334155;">
+          Cấu trúc chuẩn: <code>[registry_host/][username/]repository_name:tag</code><br/>
+          • Ví dụ: <code>nginx:alpine</code> (Tên image: <code>nginx</code>, phiên bản nhẹ: <code>alpine</code>).<br/>
+          • Nếu không chỉ định <code>:tag</code>, Docker sẽ luôn tự động gán là <code>:latest</code>.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SLIDE 7: CÁC LỆNH QUẢN LÝ CONTAINER ================= -->
+  <section class="slide-frame">
+    <div class="slide-header">
+      <div>
+        <div class="badge-group">
+          <span class="badge-level badge-basic">CƠ BẢN</span>
+          <span class="lesson-tag">Lesson 04 • Các lệnh Docker cơ bản trong vòng đời container</span>
+        </div>
+        <div class="slide-title">7. Lệnh Khởi Chạy & Quản Trị Container (docker run)</div>
+      </div>
+    </div>
+    <div class="slide-body">
+      <div class="card">
+        <div class="card-title">Lệnh Khởi Chạy Kinh Điển Cần Nhớ: <code>docker run</code></div>
+        <pre><code>docker run -d -p 8080:80 --name my-web-server nginx</code></pre>
+        <table>
+          <thead>
+            <tr><th>Tham số (Flags)</th><th>Ý nghĩa thực thi</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>-d</code> (Detached mode)</td><td>Chạy container ngầm dưới nền, giải phóng cửa sổ dòng lệnh terminal</td></tr>
+            <tr><td><code>-p 8080:80</code> (Port mapping)</td><td>Ánh xạ cổng: <code>Port Máy Thật (Host):Port Container</code> (Mở <code>http://localhost:8080</code>)</td></tr>
+            <tr><td><code>--name my-web-server</code></td><td>Đặt tên gợi nhớ cho container thay vì để Docker tự sinh tên ngẫu nhiên</td></tr>
+            <tr><td><code>-e KEY=VALUE</code></td><td>Truyền biến môi trường vào container (vd: <code>-e MYSQL_ROOT_PASSWORD=123</code>)</td></tr>
+            <tr><td><code>--rm</code></td><td>Tự động xóa sạch container khi container dừng chạy</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Xem Danh Sách Container</div>
+          <pre><code><span class="cmt"># Chỉ xem các container ĐANG CHẠY</span>
+docker ps
+
+<span class="cmt"># Xem TẤT CẢ container (cả đang chạy và đã dừng)</span>
+docker ps -a</code></pre>
+        </div>
+        <div class="card">
+          <div class="card-title">Dừng, Bật Lại & Xóa Container</div>
+          <pre><code><span class="cmt"># Dừng container an toàn (Gửi tín hiệu SIGTERM)</span>
+docker stop my-web-server
+
+<span class="cmt"># Khởi động lại container đã dừng</span>
+docker start my-web-server
+
+<span class="cmt"># Xóa container (Bắt buộc phải stop trước)</span>
+docker rm my-web-server</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SLIDE 8: THEO DÕI LOG CONTAINER ================= -->
+  <section class="slide-frame">
+    <div class="slide-header">
+      <div>
+        <div class="badge-group">
+          <span class="badge-level badge-adv">NÂNG CAO</span>
+          <span class="lesson-tag">Lesson 05 • Kiểm tra log và truy cập container (logs, exec)</span>
+        </div>
+        <div class="slide-title">8. Kiểm Tra & Giám Sát Log Container (docker logs)</div>
+      </div>
+    </div>
+    <div class="slide-body">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Cơ Chế Ghi Log Trong Docker</div>
+          <p style="font-size:0.86rem; line-height:1.5; color:#334155;">
+            • Trong container, bất kỳ thông tin nào được ứng dụng in ra màn hình tiêu chuẩn (<code>STDOUT</code> hoặc <code>STDERR</code>) đều được Docker Daemon tự động bắt giữ và lưu trữ dưới dạng log.<br/>
+            • Đây là chuẩn mực quan trọng nhất của kiến trúc <strong>Cloud-Native / 12-Factor App</strong>: Xem log như một luồng sự kiện liên tục (Event Streams).
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-title">Các Lệnh <code>docker logs</code> Thực Chiến</div>
+          <pre><code><span class="cmt"># 1. Xem toàn bộ log từ trước tới nay</span>
+docker logs my-web-server
+
+<span class="cmt"># 2. Theo dõi log thời gian thực (Follow log realtime)</span>
+docker logs -f my-web-server
+
+<span class="cmt"># 3. Xem 100 dòng log gần nhất</span>
+docker logs --tail 100 my-web-server
+
+<span class="cmt"># 4. Xem log kèm mốc thời gian chi tiết (Timestamp)</span>
+docker logs -t --tail 50 my-web-server</code></pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💡 Mẹo Xử Lý Sự Cố (Troubleshooting) Khi Container Không Bật Lên Được</div>
+        <p style="font-size:0.86rem; line-height:1.5; color:#334155;">
+          Khi gõ <code>docker ps</code> không thấy container đâu (bị sập ngay khi chạy):<br/>
+          ➔ Gõ ngay lệnh: <code>docker ps -a</code> để lấy mã Container ID.<br/>
+          ➔ Gõ lệnh: <code>docker logs &lt;container_id&gt;</code> để đọc thông báo lỗi chi tiết (vd: Sai mật khẩu DB, port bị trùng, thiếu biến môi trường).
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SLIDE 9: TRUY CẬP CONTAINER VỚI DOCKER EXEC ================= -->
+  <section class="slide-frame">
+    <div class="slide-header">
+      <div>
+        <div class="badge-group">
+          <span class="badge-level badge-adv">NÂNG CAO</span>
+          <span class="lesson-tag">Lesson 05 • Kiểm tra log và truy cập container (logs, exec)</span>
+        </div>
+        <div class="slide-title">9. Truy Cập Vào Bên Trong Container (docker exec)</div>
+      </div>
+    </div>
+    <div class="slide-body">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Cú Pháp Lệnh <code>docker exec</code></div>
+          <pre><code><span class="cmt"># Mở terminal tương tác bên trong container</span>
+docker exec -it my-web-server bash
+
+<span class="cmt"># Nếu container không có bash (vd Alpine Linux):</span>
+docker exec -it my-web-server sh</code></pre>
+          <table>
+            <tr><td><code>-i</code> (interactive)</td><td>Giữ cổng đầu vào STDIN luôn mở để nhận phím gõ</td></tr>
+            <tr><td><code>-t</code> (tty)</td><td>Cấp phát một màn hình Terminal ảo để thao tác dòng lệnh</td></tr>
+            <tr><td><code>bash / sh</code></td><td>Chương trình dòng lệnh muốn thực thi bên trong container</td></tr>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Thao Tác Trực Tiếp Bên Trong Container</div>
+          <pre><code><span class="cmt"># Kiểm tra mạng và kết nối IP</span>
+cat /etc/hosts
+ip a
+
+<span class="cmt"># Kiểm tra file cấu hình</span>
+cat /etc/nginx/nginx.conf
+
+<span class="cmt"># Thoát khỏi container trở về máy thật</span>
+exit</code></pre>
+          <p style="font-size:0.83rem; color:var(--spring-green); font-weight:600; margin-top:8px;">
+            ✅ Lưu ý: Lệnh <code>exit</code> chỉ thoát phiên shell, container <strong>vẫn tiếp tục chạy bình thường</strong> ở chế độ nền!
+          </p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Phân Biệt <code>docker run</code> vs <code>docker exec</code></div>
+        <table>
+          <thead>
+            <tr><th>Tiêu chí</th><th><code>docker run</code></th><th><code>docker exec</code></th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Mục đích</strong></td><td><strong>Tạo mới</strong> một container hoàn toàn từ Image và khởi chạy</td><td><strong>Truy cập vào</strong> một container ĐANG CHẠY để thao tác</td></tr>
+            <tr><td><strong>Trạng thái</strong></td><td>Chưa có container trước đó</td><td>Container bắt buộc phải đang ở trạng thái <strong>Running</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SLIDE 10: TỔNG KẾT & KỊCH BẢN LAB ================= -->
+  <section class="slide-frame">
+    <div class="slide-header">
+      <div>
+        <div class="badge-group">
+          <span class="badge-level badge-summary">TỔNG KẾT</span>
+          <span class="lesson-tag">Tổng kết thực hành • Session 02</span>
+        </div>
+        <div class="slide-title">10. Tổng Kết Cheat Sheet & Kịch Bản Thực Hành Lab Tại Lớp</div>
+      </div>
+    </div>
+    <div class="slide-body">
+      <div class="card">
+        <div class="card-title">Kịch Bản Thực Hành 5 Bước Hoàn Chỉnh Trên Lớp</div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 70px;">Bước</th>
+              <th>Thao Tác Thực Hiện</th>
+              <th>Lệnh Sử Dụng</th>
+              <th>Kết Quả Quan Sát</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>B1</strong></td>
+              <td>Tải Image Nginx từ Docker Hub</td>
+              <td><code>docker pull nginx:alpine</code></td>
+              <td>Tải các layer dữ liệu về máy local</td>
+            </tr>
+            <tr>
+              <td><strong>B2</strong></td>
+              <td>Chạy Container Nginx cổng 8080</td>
+              <td><code>docker run -d -p 8080:80 --name demo-web nginx:alpine</code></td>
+              <td>Mở trình duyệt <code>http://localhost:8080</code> thấy trang Welcome Nginx</td>
+            </tr>
+            <tr>
+              <td><strong>B3</strong></td>
+              <td>Theo dõi log truy cập web</td>
+              <td><code>docker logs -f demo-web</code></td>
+              <td>F5 trình duyệt thấy log request HTTP xuất hiện realtime</td>
+            </tr>
+            <tr>
+              <td><strong>B4</strong></td>
+              <td>Chui vào container sửa file HTML</td>
+              <td><code>docker exec -it demo-web sh</code></td>
+              <td>Chỉnh sửa nội dung file <code>/usr/share/nginx/html/index.html</code></td>
+            </tr>
+            <tr>
+              <td><strong>B5</strong></td>
+              <td>Dọn dẹp môi trường sạch sẽ</td>
+              <td><code>docker stop demo-web && docker rm demo-web</code></td>
+              <td>Container bị xóa, giải phóng cổng 8080</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Bộ Lệnh Cốt Lõi Cần Thuộc Lòng</div>
+          <p style="font-size:0.83rem; line-height:1.45; color:#334155;">
+            • <code>docker pull &lt;image&gt;</code>: Tải image.<br/>
+            • <code>docker run -d -p host:ctr &lt;image&gt;</code>: Chạy container ngầm.<br/>
+            • <code>docker ps -a</code>: Xem mọi container.<br/>
+            • <code>docker logs -f &lt;ctr&gt;</code>: Theo dõi log.<br/>
+            • <code>docker exec -it &lt;ctr&gt; sh</code>: Truy cập shell container.<br/>
+            • <code>docker stop & rm &lt;ctr&gt;</code>: Dừng và xóa container.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-title">Tầm Quan Trọng Trong Văn Hóa DevOps</div>
+          <p style="font-size:0.83rem; line-height:1.45; color:#334155;">
+            Docker là viên gạch nền tảng đầu tiên trong quy trình CI/CD. Đóng gói ứng dụng vào Docker Container giúp việc kiểm thử tự động, chuyển giao mã nguồn và triển khai lên cụm <strong>Kubernetes</strong> diễn ra mượt mà, loại bỏ 100% rủi ro sai lệch môi trường.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div>
+      <button class="btn" onclick="prev()">◀ Slide trước (←)</button>
+      <button class="btn" onclick="next()" style="margin-left: 8px;">Slide tiếp (→) ▶</button>
+    </div>
+    <div id="page-indicator" style="font-weight: 700;">Slide 1 / 10</div>
+  </div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide-frame');
+    const indicator = document.getElementById('page-indicator');
+    let current = 0;
+
+    function showSlide(index) {
+      slides.forEach((s, i) => s.classList.toggle('active', i === index));
+      indicator.textContent = `Slide ${index + 1} / ${slides.length}`;
+      window.scrollTo(0, 0);
+    }
+    function next() {
+      if (current < slides.length - 1) { current++; showSlide(current); }
+    }
+    function prev() {
+      if (current > 0) { current--; showSlide(current); }
+    }
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+    });
+  </script>
+</body>
+</html>
